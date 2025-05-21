@@ -6,7 +6,6 @@ try:
     import pandas as pd
     import random
     import datetime
-    import pyperclip
 except ModuleNotFoundError as e:
     print("Необходимый модуль не найден:", e)
     print("Установите его командой: pip install streamlit")
@@ -89,16 +88,13 @@ elif menu == "Тренировка":
     else:
         word_row = st.session_state.current_word
         st.markdown(f"**{word_row['Word']}**")
-
-        if st.button("📋 Копировать для тренировки"):
-            pyperclip.copy(f"{word_row['Word']} тренировка")
-            st.success("Скопировано!")
+        st.code(f"{word_row['Word']} тренировка")
 
         show_translation = st.checkbox("Показать перевод", key="show_translation")
         if show_translation:
             st.markdown(f"_Перевод: {word_row['Translation']}_")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         if col1.button("⬆️ Повысить уровень"):
             df.loc[(df["Word"] == word_row["Word"]) & (df["Translation"] == word_row["Translation"]), "Level"] += 1
             df.loc[(df["Word"] == word_row["Word"]) & (df["Translation"] == word_row["Translation"]), "Last_Review"] = datetime.datetime.now()
@@ -117,6 +113,10 @@ elif menu == "Тренировка":
             df.loc[idx, "Level"] = df.loc[idx, "Level"].apply(lambda x: max(x - 1, 0))
             df.loc[idx, "Last_Review"] = datetime.datetime.now()
             save_data(category, df)
+            st.session_state.pop("current_word")
+            st.rerun()
+
+        if col4.button("⏭ Пропустить"):
             st.session_state.pop("current_word")
             st.rerun()
 
