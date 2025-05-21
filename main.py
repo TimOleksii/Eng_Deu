@@ -76,19 +76,26 @@ if menu == "Добавить слово":
 
 elif menu == "Тренировка":
     st.subheader("🔁 Тренировка")
-    due_words = get_due_words(df)
 
-    if due_words is None or due_words.empty:
+    if "current_word" not in st.session_state:
+        due_words = get_due_words(df)
+        if due_words is not None and not due_words.empty:
+            st.session_state.current_word = due_words.sample(1).iloc[0]
+        else:
+            st.session_state.current_word = None
+
+    if st.session_state.current_word is None:
         st.info("Нет слов или фраз для тренировки. Попробуйте позже или добавьте новые записи.")
     else:
-        word_row = due_words.sample(1).iloc[0]
+        word_row = st.session_state.current_word
         st.markdown(f"**{word_row['Word']}**")
 
         if st.button("📋 Копировать для тренировки"):
             pyperclip.copy(f"{word_row['Word']} тренировка")
             st.success("Скопировано!")
 
-        if st.checkbox("Показать перевод"):
+        show_translation = st.checkbox("Показать перевод", key="show_translation")
+        if show_translation:
             st.markdown(f"_Перевод: {word_row['Translation']}_")
 
         col1, col2, col3 = st.columns(3)
@@ -96,11 +103,13 @@ elif menu == "Тренировка":
             df.loc[(df["Word"] == word_row["Word"]) & (df["Translation"] == word_row["Translation"]), "Level"] += 1
             df.loc[(df["Word"] == word_row["Word"]) & (df["Translation"] == word_row["Translation"]), "Last_Review"] = datetime.datetime.now()
             save_data(category, df)
+            st.session_state.pop("current_word")
             st.rerun()
 
         if col2.button("➡️ Оставить как есть"):
             df.loc[(df["Word"] == word_row["Word"]) & (df["Translation"] == word_row["Translation"]), "Last_Review"] = datetime.datetime.now()
             save_data(category, df)
+            st.session_state.pop("current_word")
             st.rerun()
 
         if col3.button("⬇️ Понизить уровень"):
@@ -108,6 +117,7 @@ elif menu == "Тренировка":
             df.loc[idx, "Level"] = df.loc[idx, "Level"].apply(lambda x: max(x - 1, 0))
             df.loc[idx, "Last_Review"] = datetime.datetime.now()
             save_data(category, df)
+            st.session_state.pop("current_word")
             st.rerun()
 
 elif menu == "Просмотр словаря":
